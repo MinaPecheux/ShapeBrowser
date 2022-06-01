@@ -21,9 +21,8 @@ workflows:
           chmod +x ./ucd
       - name: Login+Sync CCD
         script: |
-          ./ucd auth login ${CCD_API_KEY} &&
-          ./ucd config set bucket ${CCD_BUCKET_ID} --environment ${CCD_ENVIRONMENT_ID} &&
-          ./ucd entries sync ./Assets/Images --environment ${CCD_ENVIRONMENT_ID}
+          ./ucd entries sync ./Assets/Images --apikey ${CCD_API_KEY} --bucket ${CCD_BUCKET_ID} --environment ${CCD_ENVIRONMENT_ID}
+          ./ucd releases create --apikey ${CCD_API_KEY} --bucket ${CCD_BUCKET_ID} --environment ${CCD_ENVIRONMENT_ID}
       - name: Activate Unity License
         script: | 
           ${UNITY_BIN} -batchmode -quit -logFile -serial ${UNITY_SERIAL?} -username ${UNITY_USERNAME?} -password ${UNITY_PASSWORD?}
