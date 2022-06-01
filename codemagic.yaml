@@ -1,0 +1,43 @@
+workflows:
+  unity-android-workflow:
+    name: Unity Android Workflow
+    max_build_duration: 120
+    environment:
+        groups:
+            - unity # <-- (Includes UNITY_HOME, UNITY_SERIAL, UNITY_USERNAME and UNITY_PASSWORD)
+            - keystore_credentials # <-- (Includes CM_KEYSTORE, CM_KEYSTORE_PASSWORD, CM_KEY_PASSWORD, CM_KEY_ALIAS)
+            - ccd # <-- (Includes CCD_API_KEY, CCD_BUCKET_ID)
+        vars:
+          UNITY_BIN: ${UNITY_HOME}/Contents/MacOS/Unity
+          CCD_CLI_VERSION: "0.11.7"
+          CCD_CLI_URL: https://cli.cloudcontent.unity3dusercontent.com/osx/ucd_${CCD_CLI_VERSION}.zip
+          PACKAGE_NAME: "com.minapecheux.ShapeBrowser"
+    scripts:
+      - name: Install CCD
+        script: | 
+          curl -o ucd.zip "${CCD_CLI_URL}"
+          unzip ./ucd.zip
+          mv ./ucd_${CCD_CLI_VERSION}/ucd ucd
+          chmod +x ./ucd
+      - name: Login to CCD
+        script: ./ucd auth login ${CCD_API_KEY}
+      - name: Set CCD bucket
+        script: ./ucd config set bucket ${CCD_BUCKET_ID}
+      - name: Sync CCD image resources
+        script: ./ucd entries sync ./Assets/Images
+      - name: Activate Unity License
+        script: | 
+          ${UNITY_BIN} -batchmode -quit -logFile -serial ${UNITY_SERIAL?} -username ${UNITY_USERNAME?} -password ${UNITY_PASSWORD?}
+      - name: Set up keystore
+        script: | 
+          echo ${CM_KEYSTORE} | base64 --decode > ${CM_BUILD_DIR}/keystore.keystore
+      - name: Set build number and export Unity
+        script: | 
+          export NEW_BUILD_NUMBER=$(($(google-play get-latest-build-number --package-name "$PACKAGE_NAME" --tracks=alpha) + 1))
+          ${UNITY_BIN} -batchmode -quit -logFile -projectPath . -executeMethod BuildScript.BuildAndroid -nographics        
+    artifacts:
+        - android/*.apk
+    publishing:
+      scripts:
+        - name: Deactivate Unity License
+          script: ${UNITY_BIN} -batchmode -quit -returnlicense -nographics
