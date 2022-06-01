@@ -6,12 +6,11 @@ workflows:
         groups:
             - unity # <-- (Includes UNITY_HOME, UNITY_SERIAL, UNITY_USERNAME and UNITY_PASSWORD)
             - keystore_credentials # <-- (Includes CM_KEYSTORE, CM_KEYSTORE_PASSWORD, CM_KEY_PASSWORD, CM_KEY_ALIAS)
-            - ccd # <-- (Includes CCD_API_KEY, CCD_BUCKET_ID)
+            - ccd # <-- (Includes CCD_API_KEY, CCD_BUCKET_ID, CCD_ENVIRONMENT_ID)
         vars:
           UNITY_BIN: ${UNITY_HOME}/Contents/MacOS/Unity
           CCD_CLI_VERSION: "0.11.7"
           CCD_CLI_URL: https://cli.cloudcontent.unity3dusercontent.com/osx/ucd_${CCD_CLI_VERSION}.zip
-          CCD_ENVIRONMENT_ID: 957b02c6-7056-4814-8e19-5c15401639e0
           PACKAGE_NAME: "com.minapecheux.ShapeBrowser"
     scripts:
       - name: Install CCD
@@ -20,12 +19,11 @@ workflows:
           unzip ./ucd.zip
           mv ./ucd_${CCD_CLI_VERSION}/ucd ucd
           chmod +x ./ucd
-      - name: Login to CCD
-        script: ./ucd auth login ${CCD_API_KEY}
-      - name: Set CCD bucket
-        script: ./ucd config set bucket ${CCD_BUCKET_ID} --environment ${CCD_ENVIRONMENT_ID}
-      - name: Sync CCD image resources
-        script: ./ucd entries sync ./Assets/Images --environment ${CCD_ENVIRONMENT_ID}
+      - name: Login+Sync CCD
+        script: |
+          ./ucd auth login ${CCD_API_KEY}
+          ./ucd config set bucket ${CCD_BUCKET_ID} --environment ${CCD_ENVIRONMENT_ID}
+          ./ucd entries sync ./Assets/Images --environment ${CCD_ENVIRONMENT_ID}
       - name: Activate Unity License
         script: | 
           ${UNITY_BIN} -batchmode -quit -logFile -serial ${UNITY_SERIAL?} -username ${UNITY_USERNAME?} -password ${UNITY_PASSWORD?}
